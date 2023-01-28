@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,6 +12,7 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text TopText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
@@ -18,10 +20,16 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
+    private MenuUI menuUI;
+
+    private string highscoreText;
+    private int highScore = 0;
+
     
     // Start is called before the first frame update
     void Start()
     {
+        menuUI = FindObjectOfType<MenuUI>();
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -36,6 +44,9 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        LoadScore();
+        highscoreText = "Highscore: " + highScore.ToString() + "  |  Name: " + menuUI.playerName;
+        TopText.text = highscoreText;
     }
 
     private void Update()
@@ -70,7 +81,39 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        SaveScore();
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public int highScore;
+    }
+
+    public void SaveScore()
+    {
+        if(m_Points > highScore)
+        {
+            SaveData data = new SaveData();
+            data.highScore = m_Points;
+
+            string json = JsonUtility.ToJson(data);
+
+            File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        }
+        
+    }
+
+    public void LoadScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+            highScore = data.highScore;
+        }
     }
 }
